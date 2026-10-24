@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Link Shrinker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#f2f4f1; --surface:#ffffff; --ink:#1b2420; --muted:#5d6a63; --line:#d7ddd8;
+  --accent:#1f7a5a; --accent-ink:#ffffff; --chip:#e3efe9; --warn:#a33b2b;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121815; --surface:#1a221e; --ink:#e6ece8; --muted:#97a69e; --line:#2c3832;
+  --accent:#4cc495; --accent-ink:#0d1712; --chip:#203029; --warn:#f08b7a; color-scheme:dark}}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:680px;margin:0 auto;padding-block:40px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:28px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,6vw,2.8rem);line-height:1.05;margin:0;letter-spacing:-.02em}
+.byline{margin:6px 0 0;font-size:.85rem;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.sub{color:var(--muted);margin:8px 0 0;max-width:60ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.prefix{display:flex;align-items:stretch;min-width:0}
+.prefix span{font-family:var(--mono);font-size:.8rem;color:var(--muted);background:var(--chip);border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;padding:0 10px;display:flex;align-items:center;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prefix input{border-radius:0 10px 10px 0;font-family:var(--mono);min-width:0}
+button,.btn{font:inherit;font-weight:700;cursor:pointer;border-radius:10px;border:1px solid transparent;padding:12px 18px;text-decoration:none;display:inline-block}
+.primary{background:var(--accent);color:var(--accent-ink);align-self:flex-start}
+.primary:hover{filter:brightness(1.08)}
+.primary:disabled{opacity:.6;cursor:wait}
+.ghost{background:transparent;border-color:var(--line);color:var(--ink);padding:6px 12px;font-size:.85rem}
+.ghost:hover{border-color:var(--accent)}
+.ghost.danger{color:var(--warn)}
+.err{color:var(--warn);font-size:.9rem;margin:0}
+.result{background:var(--chip);border-radius:12px;padding:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.result code{font-family:var(--mono);font-size:1.05rem;flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+.qr{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.qr canvas{width:180px;height:180px;border-radius:8px;border:1px solid var(--line);image-rendering:pixelated;background:#fff}
+.qr-side{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1 1 180px}
+.qr-side code{font-family:var(--mono);overflow-wrap:anywhere}
+h2{font-family:var(--display);font-weight:600;font-size:1.25rem;margin:0}
+.ledger-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.code{font-family:var(--mono);font-weight:500;color:var(--accent);text-decoration:none;overflow-wrap:anywhere}
+.code:hover{text-decoration:underline}
+.long{grid-column:1/-1;color:var(--muted);font-size:.9rem;overflow-wrap:anywhere;min-width:0}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);padding:16px 0;display:block}
+.note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--line);padding-left:12px;margin:0}
+@media (max-width:480px){li{grid-template-columns:1fr}.meta{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Link Shrinker</h1>
+    <p class="byline">&copy; GaryM</p>
+    <p class="sub">Paste a long link, get a short one and a QR code. Click any short link to open the original.</p>
+  </header>
+
+  <!-- Password gate (only shows if the server asks for one) -->
+  <form class="card" id="loginForm" hidden>
+    <div class="field">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password">
+    </div>
+    <p class="err" id="loginErr" hidden></p>
+    <button class="primary" type="submit">Unlock</button>
+  </form>
+
+  <div id="app" hidden>
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <form class="card" id="form" novalidate>
+        <div class="field">
+          <label for="url">Long URL</label>
+          <input id="url" type="url" inputmode="url" placeholder="https://example.com/a/very/long/path" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="alias">Custom code (optional)</label>
+          <div class="prefix"><span id="prefixText">/</span><input id="alias" type="text" placeholder="leave blank for random" maxlength="24" autocomplete="off" autocapitalize="off"></div>
+        </div>
+        <p class="err" id="err" hidden></p>
+        <button class="primary" type="submit" id="goBtn">Shorten</button>
+      </form>
+
+      <section class="card" id="qrBox" hidden>
+        <div class="qr">
+          <canvas id="qrCanvas" width="232" height="232" aria-label="QR code"></canvas>
+          <div class="qr-side">
+            <label>Short link</label>
+            <code id="qrText"></code>
+            <div class="tools">
+              <button class="ghost" type="button" id="copyBtn">Copy link</button>
+              <button class="ghost" type="button" id="dlBtn">Download QR</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <div class="ledger-head">
+          <h2>Your links</h2>
+          <div class="tools">
+            <button class="ghost" type="button" id="exportBtn">Export CSV</button>
+            <button class="ghost" type="button" id="refreshBtn">Refresh</button>
+          </div>
+        </div>
+        <ul id="list"><li class="empty">Loading links...</li></ul>
+      </section>
+
+      <p class="note">On Render's free plan the site sleeps when nobody uses it, so the first click after a quiet spell can take around 30 seconds. Export your links now and then, as the free database has no backups.</p>
+    </div>
+  </div>
+</div>
+
+<script src="/qrcode.js"></script>
+<script>
+const PW_KEY = 'link-shrinker-pw';
+const ORIGIN = location.origin;
+const host = location.host;
+let links = [];
+let currentQR = null;
+
+function getPw(){ try { return localStorage.getItem(PW_KEY) || ''; } catch(e){ return ''; } }
+function setPw(v){ try { localStorage.setItem(PW_KEY, v); } catch(e){} }
+
+async function api(method, path, body){
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-password': getPw() },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (res.status === 401) { showLogin(); throw new Error('locked'); }
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
+  return data;
+}
+
+function showLogin(msg){
+  document.getElementById('app').hidden = true;
+  document.getElementById('loginForm').hidden = false;
+  const e = document.getElementById('loginErr');
+  e.textContent = msg || ''; e.hidden = !msg;
+  document.getElementById('pw').focus();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  setPw(document.getElementById('pw').value);
+  try {
+    await load();
+    document.getElementById('loginForm').hidden = true;
+  } catch(err) {
+    if (err.message === 'locked') showLogin('That password did not work.');
+  }
+});
+
+async function load(){
+  links = await api('GET', '/api/links');
+  document.getElementById('app').hidden = false;
+  render();
+}
+
+function shortUrl(code){ return ORIGIN + '/' + code; }
+function ago(iso){
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if (h < 24) return h + ' h ago';
+  return Math.round(h / 24) + ' d ago';
+}
+
+function render(){
+  const ul = document.getElementById('list'); ul.innerHTML = '';
+  if (!links.length) { ul.innerHTML = '<li class="empty">No links yet. Shorten one above and it appears here.</li>'; return; }
+  links.forEach(l => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.className = 'code'; a.href = shortUrl(l.code); a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = host + '/' + l.code;
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const clicks = document.createElement('span'); clicks.textContent = l.clicks + ' click' + (l.clicks === 1 ? '' : 's');
+    const when = document.createElement('span'); when.textContent = ago(l.created_at);
+    const qrB = document.createElement('button'); qrB.className = 'ghost'; qrB.type = 'button'; qrB.textContent = 'QR';
+    qrB.addEventListener('click', () => { showQR(l.code); document.getElementById('qrBox').scrollIntoView({behavior:'smooth', block:'center'}); });
+    const del = document.createElement('button'); del.className = 'ghost danger'; del.type = 'button'; del.textContent = 'Delete';
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if (!armed) { armed = true; del.textContent = 'Tap to confirm'; setTimeout(() => { armed = false; del.textContent = 'Delete'; }, 3000); return; }
+      try { await api('DELETE', '/api/links/' + encodeURIComponent(l.code)); links = links.filter(x => x !== l); render();
+        if (currentQR === l.code) document.getElementById('qrBox').hidden = true; } catch(e){}
+    });
+    meta.append(clicks, when, qrB, del);
+    const long = document.createElement('div'); long.className = 'long'; long.textContent = l.url;
+    li.append(a, meta, long); ul.appendChild(li);
+  });
+}
+
+function drawQR(text){
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  const n = qr.getModuleCount(), quiet = 4, scale = 8;
+  const size = (n + quiet * 2) * scale;
+  const c = document.getElementById('qrCanvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#000000';
+  for (let r = 0; r < n; r++) for (let col = 0; col < n; col++)
+    if (qr.isDark(r, col)) ctx.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
+}
+
+function showQR(code){
+  currentQR = code;
+  const url = shortUrl(code);
+  drawQR(url);
+  document.getElementById('qrText').textContent = url;
+  document.getElementById('qrBox').hidden = false;
+}
+
+document.getElementById('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = document.getElementById('err'); err.hidden = true;
+  const btn = document.getElementById('goBtn'); btn.disabled = true; btn.textContent = 'Shortening...';
+  try {
+    const link = await api('POST', '/api/links', {
+      url: document.getElementById('url').value,
+      code: document.getElementById('alias').value
+    });
+    links.unshift(link); render(); showQR(link.code);
+    document.getElementById('url').value = ''; document.getElementById('alias').value = '';
+  } catch(ex) {
+    if (ex.message !== 'locked') { err.textContent = ex.message; err.hidden = false; }
+  } finally { btn.disabled = false; btn.textContent = 'Shorten'; }
+});
+
+document.getElementById('copyBtn').addEventListener('click', e => {
+  const b = e.currentTarget, t = document.getElementById('qrText').textContent;
+  navigator.clipboard.writeText(t).then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy link', 1500); })
+    .catch(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('qrText')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+});
+
+document.getElementById('dlBtn').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = document.getElementById('qrCanvas').toDataURL('image/png');
+  a.download = 'qr-' + currentQR + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const rows = [['short_link','original_url','clicks','created']].concat(
+    links.map(l => [shortUrl(l.code), l.url, l.clicks, l.created_at]));
+  const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'link-shrinker-export.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => load().catch(() => {}));
+
+document.getElementById('prefixText').textContent = host + '/';
+load().catch(err => {
+  if (err.message !== 'locked') {
+    document.getElementById('app').hidden = false;
+    document.getElementById('list').innerHTML = '<li class="empty">Could not load links: ' + err.message.replace(/</g,'&lt;') + '</li>';
+  }
+});
+</script>
+</body>
+</html>
